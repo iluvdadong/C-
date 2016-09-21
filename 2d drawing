@@ -1,0 +1,159 @@
+#include <GLFW/glfw3.h>
+#include <cstring>
+#include <stdlib.h>		  // srand, rand
+#include <thread>         // std::this_thread::sleep_for
+#include <chrono>         // std::chrono::seconds
+#include <algorithm>  //배경
+#include "math.h"
+#define D_SCL_SECURE_NO_WARNINGS
+
+const int width = 1024;
+const int height = 768;
+
+float* pixels = new float[width*height * 3];
+
+
+
+void drawPixel(const int& i, const int& j, const float& red, const float& green, const float& blue)
+{
+	pixels[(i + width* j) * 3 + 0] = red;
+	pixels[(i + width* j) * 3 + 1] = green;
+	pixels[(i + width* j) * 3 + 2] = blue;
+} //색깔값
+
+
+
+  // scratched from https://courses.engr.illinois.edu/ece390/archive/archive-f2000/mp/mp4/anti.html
+  // see 'Rasterization' part.
+void drawLine(const int& i6, const int& j6, const int& i7, const int& j7, const float& red, const float& green, const float& blue)
+{
+	for (int i = i6; i <= i7; i++)
+	{
+		const int j = (j7 - j6)*(i - i6) / (i7 - i6) + j6;
+
+		drawPixel(i, j, red, green, blue);
+	}
+}
+
+void drawColorRect(const int& i4, const int& j4, const int& i5, const int& j5, const float& red, const float& green, const float& blue) {
+	for (int i = i4; i <= i5; i++) {
+		for (int j = j4; j <= j5; j++) {
+			drawPixel(i, j, red, green, blue);
+		}
+	}
+}
+
+void drawRect(const int& i0, const int& j0, const int& i1, const int& j1, const float& red, const float& green, const float& blue) {
+	for (int i = i0; i <= i1; i++) {
+		for (int j = j0; j <= j1; j++) {
+			if (!(i > i0 + 2 && i < i1 - 2 && j > j0 + 2 && j < j1 - 2)) {
+				drawPixel(i, j, red, green, blue);
+			}
+		}
+	}
+}
+
+
+
+
+
+void drawOnPixelBuffer()
+{
+	std::fill_n(pixels, width*height * 3, 1.0f);	// white background
+	
+	// drawing a line //위치 지정
+	//TODO: anti-aliasing
+	const int i0 = 50, i1 = 200;
+	const int j0 = 50, j1 = 200;
+
+	const int i4 = 300, i5 = 450;
+	const int j4 = 300, j5 = 450;
+
+	const int i6 = 300, i7 = 450;
+	const int j6 = 50, j7 = 200;// 추가된 부분 
+
+
+	const int i = rand() % width, j = rand() % height;
+
+	////TODO: try moving object
+	
+	//daraw thikener line
+	//for (int i = -3; i < 3; i++)
+	//{
+	//	drawLine(i0, j0 + i, i1, j1 + i, 1.0f, 0.0f, 0.0f);
+	//}
+
+
+	drawRect(i0, j0, i1, j1, 2.7f, 0.1f, 1.08f);
+	drawColorRect(i4, j4, i5, j5, 2.7f, 0.1f, 1.08f);
+	drawLine(i6, j6, i7, j7, 2.7f, 0.1f, 1.08f);
+
+
+
+
+
+}
+
+int main(void)
+{
+	GLFWwindow* window;
+
+	/* Initialize the library */
+	if (!glfwInit())
+		return -1;
+
+	/* Create a windowed mode window and its OpenGL context */
+	window = glfwCreateWindow(width, height, "Hello World", NULL, NULL);
+	if (!window)
+	{
+		glfwTerminate();
+		return -1;
+	}
+
+	/* Make the window's context current */
+	glfwMakeContextCurrent(window);
+	glClearColor(1, 1, 1, 1); // while background
+
+							  //삼각형 좌표
+
+	float vertices[] = 
+{
+		0.0f,  0.5f, 1.0f, 0.0f, 0.0f, // Vertex 1: Red
+		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // Vertex 2: Green
+		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f  // Vertex 3: Blue
+	};
+
+
+	/* Loop until the user closes the window */
+	while (!glfwWindowShouldClose(window))
+	{
+
+
+		////////////////////////////////////* Render here */////여기서부터 그림을 그리면 된다.
+
+
+		//glClear(GL_COLOR_BUFFER_BIT);
+
+		drawOnPixelBuffer();
+
+		////////////////////////////////////////////////////////
+
+
+		glDrawPixels(width, height, GL_RGB, GL_FLOAT, pixels); //gpu로 복사해주는 코드
+
+
+        /* Swap front and back buffers */
+		glfwSwapBuffers(window);
+
+		/* Poll for and process events */
+		glfwPollEvents();
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+
+	glfwTerminate();
+
+	delete[] pixels; //메모리 지워주기
+
+	return 0;
+}
